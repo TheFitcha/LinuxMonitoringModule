@@ -1,0 +1,1 @@
+cmd_/home/filip/Documents/Zavrsni/test.ko := ld -r -m elf_x86_64 --build-id=sha1  -T scripts/module.lds -o /home/filip/Documents/Zavrsni/test.ko /home/filip/Documents/Zavrsni/test.o /home/filip/Documents/Zavrsni/test.mod.o;  true
