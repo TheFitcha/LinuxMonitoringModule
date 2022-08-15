@@ -6,15 +6,51 @@ command=$2
 case $command in
 	"machineRegister")
 		linuxVersion=$(cat /proc/version | cut -d ' ' -f3)
+
+		#registracija mašine
 		name=$(hostname)
-
-		newId=$(curl -s -X POST -H "Content-type: application/json" \
-			-d "{\"name\":\"$name\", \"linuxVersion\":\"$linuxVersion\"}" \
-		 	--insecure https://$ip_address/api/main/machineRegister)
-
-		printf "MachineId: %s\n" $newId > machineId
+		if [ -z "$(cat machineId | grep MachineId)" ]
+		then
+			echo $(cat machineId | grep MachineId)
+			newId=$(curl -s -X POST -H "Content-type: application/json" \
+				-d "{\"name\":\"$name\", \"linuxVersion\":\"$linuxVersion\"}" \
+				--insecure https://$ip_address/api/main/machineRegister)
+			printf "MachineId: %s\n" $newId > machineId
+		else
+			newId=$(cat machineId | grep machineId | cut -d ':' -f2 | xargs)
+		fi
 
 		echo $newId$'\n'
+
+		#registracija procesora
+		cpuName=$(cat /proc/cpuinfo | grep 'model name' -m1 | cut -d ':' -f2 | xargs)
+		if [ -z "$(cat machineId | grep CpuId)" ]
+		then
+			newCpuId=$(curl -s -X POST -H "Content-type: application/json" \
+					-d "{\"name\":\"$cpuName\", \"machineId\":\"$newId\"}" \
+			   		--insecure https://$ip_address/api/main/cpuRegister)
+			printf "CpuId: %s\n" $newCpuId >> machineId
+		else
+			newCpuId=$(cat machineId | grep CpuId | cut -d ':' -f2 | xargs)
+		fi
+
+		echo $newCpuId$'\n'
+
+		#registracija jezgri
+		cpuCores=$(cat /proc/cpuinfo | grep -e 'processor' -e 'cpu MHz' -e 'cache size')
+		numOfIterations=$(($(echo "$cpuCores" | wc -l) / 3))
+		for ((i = 0 ; i < $numOfIterations ; i++)); do
+			add=$((${i}*3))
+			coreNo=$(echo "$cpuCores" | sed -n $((1+$add))p)
+			cpuMhz=$(echo "$cpuCores" | sed -n $((2+$add))p)
+			cacheKb=$(echo "$cpuCores" | sed -n $((3+$add))p)
+			coreId=$(curl -X POST -H "Content-type: application/json" \
+				-d "{\"processorId\":\"$newCpuId\", \"speed\":\"$cpuMhz\", \"coreNo\":\"$coreNo\", \"cacheSizeKB\":\"$cacheKb\"}" \
+				--insecure https://$ip_address/api/main/coreRegister)
+
+			printf "CoreNo: %s id: %s" $coreNo $coreId
+		done
+
 		echo "$ip_address/api/main/$command"
 		;;
 
