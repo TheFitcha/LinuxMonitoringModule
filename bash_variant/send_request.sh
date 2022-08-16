@@ -11,22 +11,22 @@ case $command in
 		name=$(hostname)
 		if [ -z "$(cat machineId | grep MachineId)" ]
 		then
-			newId=$(curl -s -X POST -H "Content-type: application/json" \
+			newMachineId=$(curl -s -X POST -H "Content-type: application/json" \
 				-d "{\"name\":\"$name\", \"linuxVersion\":\"$linuxVersion\"}" \
 				--insecure https://$ip_address/api/main/machineRegister)
-			printf "MachineId: %s\n" $newId > machineId
+			printf "MachineId: %s\n" $newMachineId > machineId
 		else
-			newId=$(cat machineId | grep MachineId | cut -d ':' -f2 | xargs)
+			newMachineId=$(cat machineId | grep MachineId | cut -d ':' -f2 | xargs)
 		fi
 
-		echo 'Machine id: '$newId$'\n'
+		echo 'Machine id: '$newMachineId$'\n'
 
 		#registracija procesora
 		cpuName=$(cat /proc/cpuinfo | grep 'model name' -m1 | cut -d ':' -f2 | xargs)
 		if [ -z "$(cat machineId | grep CpuId)" ]
 		then
 			newCpuId=$(curl -s -X POST -H "Content-type: application/json" \
-					-d "{\"name\":\"$cpuName\", \"machineId\":\"$newId\"}" \
+					-d "{\"name\":\"$cpuName\", \"machineId\":\"$newMachineId\"}" \
 			   		--insecure https://$ip_address/api/main/cpuRegister)
 			printf "CpuId: %s\n" $newCpuId >> machineId
 		else
@@ -56,7 +56,21 @@ case $command in
 
 				printf "Core ID: %s\n\n" $coreId
 			done
-			printf "Cores registered" >> machineId
+			printf "Cores registered\n" >> machineId
+		fi
+
+		#registracija memorije
+		if [ -z "$(cat machineId | grep 'Memory registered')" ]
+		then
+			totalPhysicalMemoryKb=$(cat /proc/meminfo | grep MemTotal | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
+			totalSwapKb=$(cat /proc/meminfo | grep SwapTotal | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
+			registeredMemoryMachineId=$(curl -X POST -H "Content-type: application/json" \
+				-d "{\"machineId\":\"$newMachineId\", \"totalPhysicalMemoryKb\":\"$totalPhysicalMemoryKb\", \"totalSwapMemoryKb\":\"$totalSwapKb\"}" \
+				--insecure https://$ip_address/api/main/memoryRegister)
+
+			echo 'New memory registered with machine: '$registeredMemoryMachineId$'\n'
+
+			printf "Memory registered\n" >> machineId
 		fi
 
 		echo "$ip_address/api/main/$command"
