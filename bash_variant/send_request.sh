@@ -11,16 +11,15 @@ case $command in
 		name=$(hostname)
 		if [ -z "$(cat machineId | grep MachineId)" ]
 		then
-			echo $(cat machineId | grep MachineId)
 			newId=$(curl -s -X POST -H "Content-type: application/json" \
 				-d "{\"name\":\"$name\", \"linuxVersion\":\"$linuxVersion\"}" \
 				--insecure https://$ip_address/api/main/machineRegister)
 			printf "MachineId: %s\n" $newId > machineId
 		else
-			newId=$(cat machineId | grep machineId | cut -d ':' -f2 | xargs)
+			newId=$(cat machineId | grep MachineId | cut -d ':' -f2 | xargs)
 		fi
 
-		echo $newId$'\n'
+		echo 'Machine id: '$newId$'\n'
 
 		#registracija procesora
 		cpuName=$(cat /proc/cpuinfo | grep 'model name' -m1 | cut -d ':' -f2 | xargs)
@@ -34,22 +33,31 @@ case $command in
 			newCpuId=$(cat machineId | grep CpuId | cut -d ':' -f2 | xargs)
 		fi
 
-		echo $newCpuId$'\n'
+		echo 'CPU id: '$newCpuId$'\n'
 
 		#registracija jezgri
-		cpuCores=$(cat /proc/cpuinfo | grep -e 'processor' -e 'cpu MHz' -e 'cache size')
-		numOfIterations=$(($(echo "$cpuCores" | wc -l) / 3))
-		for ((i = 0 ; i < $numOfIterations ; i++)); do
-			add=$((${i}*3))
-			coreNo=$(echo "$cpuCores" | sed -n $((1+$add))p)
-			cpuMhz=$(echo "$cpuCores" | sed -n $((2+$add))p)
-			cacheKb=$(echo "$cpuCores" | sed -n $((3+$add))p)
-			coreId=$(curl -X POST -H "Content-type: application/json" \
-				-d "{\"processorId\":\"$newCpuId\", \"speed\":\"$cpuMhz\", \"coreNo\":\"$coreNo\", \"cacheSizeKB\":\"$cacheKb\"}" \
-				--insecure https://$ip_address/api/main/coreRegister)
+		if [ -z "$(cat machineId | grep 'Cores registered')" ]
+		then
+			cpuCores=$(cat /proc/cpuinfo | grep -e 'processor' -e 'cpu MHz' -e 'cache size')
+			numOfIterations=$(($(echo "$cpuCores" | wc -l) / 3))
+			for ((i = 0 ; i < $numOfIterations ; i++)); do
+				add=$((${i}*3))
+				echo '-------------------------------------'
+				coreNo=$(echo "$cpuCores" | sed -n $((1+$add))p | cut -d ':' -f2 | xargs)
+				printf "CoreNo: %s\n" $coreNo
+				cpuMhz=$(echo "$cpuCores" | sed -n $((2+$add))p | cut -d ':' -f2 | xargs)
+				printf "Cpu MHz: %s\n" $cpuMhz
+				cacheKb=$(echo "$cpuCores" | sed -n $((3+$add))p | cut -d ':' -f2 | xargs | cut -d ' ' -f1)
+				printf "Cache KB: %s\n" $cacheKb
 
-			printf "CoreNo: %s id: %s" $coreNo $coreId
-		done
+				coreId=$(curl -X POST -H "Content-type: application/json" \
+					-d "{\"processorId\":\"$newCpuId\", \"speed\":\"$cpuMhz\", \"coreNo\":\"$coreNo\", \"cacheSizeKB\":\"$cacheKb\"}" \
+					--insecure https://$ip_address/api/main/coreRegister)
+
+				printf "Core ID: %s\n\n" $coreId
+			done
+			printf "Cores registered" >> machineId
+		fi
 
 		echo "$ip_address/api/main/$command"
 		;;
