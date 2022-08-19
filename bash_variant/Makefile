@@ -1,4 +1,4 @@
-KDIR = /lib/modules/5.15.0-41-generic/build
+KDIR = /lib/modules/5.15.0-46-generic/build
 
 kbuild:
 	make -C $(KDIR) M=`pwd`

@@ -3,6 +3,8 @@
 ip_address=$1
 command=$2
 
+touch machineId
+
 case $command in
 	"machineRegister")
 		linuxVersion=$(cat /proc/version | cut -d ' ' -f3)
