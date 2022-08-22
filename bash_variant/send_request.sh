@@ -100,7 +100,7 @@ case $command in
 			-d "{\"processIdSystem\":\"$pid\", \"name\":\"$processName\", \"machineId\":\"$machineId\", \"processPath\":\"$processPath\"}" \
 			--insecure https://$ip_address/api/main/processRegister)
 
-		printf "%s: %s" $pid $newProcessId >> machineId
+		printf "%s: %s\n" $pid $newProcessId >> machineId
 
 		echo $newProcessId$'\n'
 		echo "$ip_address/api/main/$command"
