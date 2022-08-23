@@ -3,8 +3,6 @@
 ip_address=$1
 command=$2
 
-touch machineId
-
 case $command in
 	"machineRegister")
 		linuxVersion=$(cat /proc/version | cut -d ' ' -f3)
@@ -13,11 +11,15 @@ case $command in
 		name=$(hostname)
 		if [ -z "$(cat machineId | grep MachineId)" ]
 		then
+			echo "[machineRegister] Creating new machine!\n" >> testMachineId
+
 			newMachineId=$(curl -s -X POST -H "Content-type: application/json" \
 				-d "{\"name\":\"$name\", \"linuxVersion\":\"$linuxVersion\"}" \
 				--insecure https://$ip_address/api/main/machineRegister)
 			printf "MachineId: %s\n" $newMachineId > machineId
 		else
+			echo "[machineRegister] Machine ID already present!\n" >> testMachineId
+
 			newMachineId=$(cat machineId | grep MachineId | cut -d ':' -f2 | xargs)
 		fi
 
@@ -27,11 +29,15 @@ case $command in
 		cpuName=$(cat /proc/cpuinfo | grep 'model name' -m1 | cut -d ':' -f2 | xargs)
 		if [ -z "$(cat machineId | grep CpuId)" ]
 		then
+			echo "[machineRegister] Creating new CPU!\n" >> testMachineId
+
 			newCpuId=$(curl -s -X POST -H "Content-type: application/json" \
 					-d "{\"name\":\"$cpuName\", \"machineId\":\"$newMachineId\"}" \
 			   		--insecure https://$ip_address/api/main/cpuRegister)
 			printf "CpuId: %s\n" $newCpuId >> machineId
 		else
+			echo "[machineRegister] CPU already present!\n" >> testMachineID
+
 			newCpuId=$(cat machineId | grep CpuId | cut -d ':' -f2 | xargs)
 		fi
 
@@ -40,6 +46,8 @@ case $command in
 		#registracija jezgri
 		if [ -z "$(cat machineId | grep 'Cores registered')" ]
 		then
+			echo "[machineRegister] Creating cores!\n" >> testMachineId
+
 			cpuCores=$(cat /proc/cpuinfo | grep -e 'processor' -e 'cpu MHz' -e 'cache size')
 			numOfIterations=$(($(echo "$cpuCores" | wc -l) / 3))
 			for ((i = 0 ; i < $numOfIterations ; i++)); do
@@ -64,6 +72,8 @@ case $command in
 		#registracija memorije
 		if [ -z "$(cat machineId | grep 'Memory registered')" ]
 		then
+			echo "[registerMachine] Creating memory!\n" >> testMachineId
+
 			totalPhysicalMemoryKb=$(cat /proc/meminfo | grep MemTotal | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
 			totalSwapKb=$(cat /proc/meminfo | grep SwapTotal | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
 			registeredMemoryMachineId=$(curl -X POST -H "Content-type: application/json" \
@@ -82,16 +92,20 @@ case $command in
 		pid=$3
 		if [ -z "$pid" ]
 		then
+			echo 'PID not present!\n' >> testMachineId
 			echo "Third argument should be PID!"
 			exit
 		fi
+		echo '[processRegister] Got process ID: '$pid >> testMachineId
 
-		machineId=$(cat machineId | grep MachineId | cut -d ' ' -f2) #mozda preko nekog filea pohraniti id koji vrati machineRegister?
+		machineId=$(cat machineId | grep MachineId | cut -d ' ' -f2)
 		if [ -z "$machineId" ]
 		then
+			echo "MachineID not found!\n" >> testMachineId
 			echo "MachineId not found!"
 			exit
 		fi
+		echo '[processRegister] Got Machine ID: '$machineId >> testMachineId
 
 		processName=$(cat /proc/$pid/status | grep Name | cut -d$'\t' -f2)
 		processPath=$(ps -p $pid -o cmd | cut -d$'\n' -f2)
@@ -110,6 +124,7 @@ case $command in
 		pid=$3
 		if [ -z "$pid" ]
 		then
+			echo "[processUpdate] PID not found!\n" >> testMachineId
 			echo "Third argument should be PID!"
 			exit
 		fi
@@ -117,6 +132,7 @@ case $command in
 		processId=$(cat machineId | grep $pid: | cut -d ' ' -f2)
 		if [ -z "$processId" ]
 		then
+			echo "[processUpdate] ProcessId not found!\n" >> testMachineId
 			echo "ProcessId not found!"
 			exit
 		fi
@@ -126,8 +142,8 @@ case $command in
 		memUtil=$(ps -p $pid -o %mem | cut -d$'\n' -f2 | xargs)
 		threads=$(cat /proc/$pid/status | grep Threads | cut -d$'\t' -f2)
 
-		echo $processId
-		echo $state$'\n'$cpuUtil$'\n'$memUtil$'\n'$threads$'\n'
+		echo '[processUpdate] Process ID: '$processId >> testMachineId
+		echo $state$'\n'$cpuUtil$'\n'$memUtil$'\n'$threads$'\n' >> testMachineId
 
 		updatedProcessId=$(curl -s -X POST -H "Content-type: application/json" \
 			-d "{\"processId\":\"$processId\", \"state\":\"$state\", \"cpuUtil\":$cpuUtil, \"memUtil\":$memUtil, \"threads\":$threads}" \
