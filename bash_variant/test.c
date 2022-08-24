@@ -4,6 +4,7 @@
 #include<linux/kthread.h>
 #include<linux/sched.h>
 #include<linux/kmod.h>
+#include<linux/delay.h>
 
 #define AUTHOR "Filip Balder"
 #define DESCRIPTION "Statux main module."
@@ -50,7 +51,7 @@ static int machine_register(void *arg){
 	}
 
 	printk(KERN_INFO "%s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);
-	int callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_EXEC);
+	int callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_PROC);
 
 	if(callStatus != 0){
 		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
@@ -64,7 +65,6 @@ static int machine_register(void *arg){
 }
 
 
-//treba handlati argument id procesa
 static int process_register(void *arg){
 //	set_current_state(TASK_INTERRUPTIBLE);
 //	schedule();
@@ -108,31 +108,43 @@ static int process_register(void *arg){
 	return 0;
 }
 
-//treba handlati parametar za process id
 static int process_update(void *arg){
 	char functionName[20] = "process_update";
-	int processId = 1;
+	int * processIds = arg;
+	struct subprocess_info *scriptInfo;
+	char processIdString[10];
+	int callStatus;
 
 	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
 
-	struct subprocess_info *scriptInfo;
+	int i, repeat;
+	for (repeat = 0; repeat<10; repeat++){
+		for (i = 0; i<SIZEOF(processIds); i++) {
 
-	char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/bash_variant/send_request.sh", MAIN_IP, "processUpdate", processId, NULL };
+			sprintf(processIdString, "%d", processIds[i]);
+			printk(KERN_INFO "arg: %s\n", processIdString);
 
-	char * envp[] = { "HOME=/home/filip/Documents/Zavrsni/bash_variant", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
+			char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/bash_variant/send_request.sh", MAIN_IP, "processUpdate", processIdString, NULL };
 
-	scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &process_update_cleanup, NULL);
-	if(scriptInfo == NULL){
-		printk(KERN_ERR "Error while creating script (%s)\n", functionName);
-		return -ENOMEM;
-	}
+			char * envp[] = { "HOME=/home/filip/Documents/Zavrsni/bash_variant", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
-	printk(KERN_INFO "%s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);
-	int callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_EXEC);
+			scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &process_register_cleanup, NULL);
+			if(scriptInfo == NULL){
+				printk(KERN_ERR "Error while creating script (%s)\n", functionName);
+				return -ENOMEM;
+			}
 
-	if(callStatus != 0){
-		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-		return callStatus;
+			printk(KERN_INFO "%s %s %s %s %s\n", argv[0], argv[1], argv[2], argv[3], argv[4]);
+
+			callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_EXEC);
+
+			if(callStatus != 0){
+				printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
+				return callStatus;
+			}
+
+			mdelay(5000);
+		}
 	}
 
 	printk(KERN_INFO "Process update called. Status: %d (%s).\n", callStatus, functionName);
@@ -144,7 +156,7 @@ int init_routine(void){
 	printk("Initializing statux...\n");
 	int err;
 
-	machine_register_task = kthread_run(machine_register, NULL, "machine_register_thread");
+	/*machine_register_task = kthread_run(machine_register, NULL, "machine_register_thread");
 	if(IS_ERR(machine_register_task)){
 		printk(KERN_ERR "ERROR: Cannot create machine_register_thread!\n");
 		err = PTR_ERR(machine_register_task);
@@ -158,8 +170,19 @@ int init_routine(void){
 		err = PTR_ERR(process_register_task);
 		process_register_task = NULL;
 		return err;
-	}
+	}*/
 
+	machine_register(NULL);
+
+	process_register(processIds);
+
+	process_update_task = kthread_run(process_update, processIds, "process_update_thread");
+	if(IS_ERR(process_update_task)){
+		printk(KERN_ERR "ERROR: Cannot create process_update_thread!\n");
+		err = PTR_ERR(process_update_task);
+		process_update_task = NULL;
+		return err;
+	}
 
 	printk("Main statux module loaded!\n");
 	return 0;
