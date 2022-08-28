@@ -6,6 +6,11 @@
 #include<linux/kmod.h>
 #include<linux/delay.h>
 
+#include<linux/fs.h>
+#include<asm/segment.h>
+#include<asm/uaccess.h>
+#include<linux/buffer_head.h>
+
 #define AUTHOR "Filip Balder"
 #define DESCRIPTION "Statux main module."
 #define LICENSE "GPL"
@@ -13,11 +18,12 @@
 #define SIZEOF(arr) sizeof(arr)/sizeof(*arr)
 
 #define MAIN_IP "192.168.1.52:5000"
+#define MAIN_ID_PATH "/db_ids"
 
 struct task_struct *machine_register_task;
 struct task_struct *process_register_task;
 struct task_struct *process_update_task;
-int processIds[2] = {1, 10};
+int * processIds[] = {1, 10, 4681};
 
 //inotify feature za monitoring promjena na filesystemu?
 
@@ -152,6 +158,12 @@ static int process_update(void *arg){
 	return 0;
 }
 
+static int remove_machine(void *arg){
+
+	return 0;
+}
+
+
 int init_routine(void){
 	printk("Initializing statux...\n");
 	int err;
@@ -189,6 +201,7 @@ int init_routine(void){
 }
 
 void exit_routine(void){
+	remove_machine(NULL);
 	printk("Main statux module unloaded!\n");
 }
 
