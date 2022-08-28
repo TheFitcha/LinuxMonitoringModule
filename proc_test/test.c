@@ -4,12 +4,13 @@
 #include<asm/uaccess.h>
 
 #define PROCFS_MAX_SIZE 1024
-#define PROCFS_NAME "buffer1k"
+#define PROCFS_NAME "bufferDoric"
 
 #define BUFSIZE 1024
 
+char buf[BUFSIZE];
+
 static ssize_t p_write(struct file *file, const char *ubuf, size_t count, loff_t *ppos){
-/*	char buf[BUFSIZE];
 	if(*ppos > 0 || count > BUFSIZE){
 		printk(KERN_WARNING "ppos or count problem\n");
 		return -EFAULT;
@@ -20,26 +21,26 @@ static ssize_t p_write(struct file *file, const char *ubuf, size_t count, loff_t
 		return -EFAULT;
 	}
 
-	int c = strlen(buf);
-	*ppos = c;*/
+	int buf_len = strlen(buf);
+	*ppos = buf_len;
 
-	printk("WRITE HANDLER! Count: %zu\n", count);
-	return count;
+	printk("WRITE HANDLER! Count: %d\n", buf_len);
+	return buf_len;
 }
 
 
 static ssize_t p_read(struct file *file, char *ubuf, size_t count, loff_t *ppos){
-	/*char buf[BUFSIZE];
+	/*if(*ppos > 0 || count < BUFSIZE)
+		return 0;*/
 
-	if(*ppos > 0 || count < BUFSIZE)
-		return 0;
+	int buf_len = strlen(buf);
 
-	if(copy_to_user(ubuf, buf, count))
-		return -EFAULT;*/
+	if(copy_to_user(ubuf, buf, buf_len))
+		return -EFAULT;
 
-	printk("READ HANDLER! Count: %zu\n", count);
-	*ppos = 6;
-	return 6;
+	printk("READ HANDLER! Count: %d\n", buf_len);
+	*ppos = buf_len;
+	return buf_len;
 }
 
 static struct proc_dir_entry *proc;
