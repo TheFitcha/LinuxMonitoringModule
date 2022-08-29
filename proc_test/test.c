@@ -2,9 +2,10 @@
 #include<linux/kernel.h>
 #include<linux/proc_fs.h>
 #include<asm/uaccess.h>
+#include<linux/slab.h>
 
 #define PROCFS_MAX_SIZE 1024
-#define PROCFS_NAME "bufferDoric"
+#define PROCFS_NAME "statux_info"
 
 #define BUFSIZE 1024
 
@@ -16,10 +17,14 @@ static ssize_t p_write(struct file *file, const char *ubuf, size_t count, loff_t
 		return -EFAULT;
 	}
 
-	if(copy_from_user(buf, ubuf, count)){
+	char *temp_buf = kmalloc(strlen(ubuf), GFP_USER);
+
+	if(copy_from_user(temp_buf, ubuf, count)){
 		printk(KERN_WARNING "copy_from_user error!\n");
 		return -EFAULT;
 	}
+
+	strcat(buf, temp_buf);
 
 	int buf_len = strlen(buf);
 	*ppos = buf_len;
@@ -32,13 +37,19 @@ static ssize_t p_write(struct file *file, const char *ubuf, size_t count, loff_t
 static ssize_t p_read(struct file *file, char *ubuf, size_t count, loff_t *ppos){
 	/*if(*ppos > 0 || count < BUFSIZE)
 		return 0;*/
+	if(*ppos > 0){
+		*ppos = 0;
+		return 0;
+	}
 
 	int buf_len = strlen(buf);
 
 	if(copy_to_user(ubuf, buf, buf_len))
 		return -EFAULT;
 
-	printk("READ HANDLER! Count: %d\n", buf_len);
+
+	printk("READ HANDLER! Count: %d ppos: %lld\n ", buf_len, *ppos);
+
 	*ppos = buf_len;
 	return buf_len;
 }
