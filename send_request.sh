@@ -167,7 +167,7 @@ case $command in
 
 		echo '[machineDelete] Deleting machine with id:'$machineId >> "$output_file_log"
 
-		curl -s -X DELETE -H $ip_address/api/main/machineDelete/$machineId "Accept: application/json"
+		returnId=$(curl -X DELETE --insecure https://$ip_address/api/main/machineDelete/$machineId -H "Accept: application/json")
 
 		echo '[machineDelete] Deleted machine with id: '$machineId >> "$output_file_log"
 		echo "$ip_address/api/main/machineDelete/$machineId"

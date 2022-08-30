@@ -40,9 +40,9 @@ static int machine_register(void *arg){
 
 	struct subprocess_info *scriptInfo;
 
-	char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/bash_variant/send_request.sh", MAIN_IP, "machineRegister", NULL };
+	char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "machineRegister", NULL };
 
-	char * envp[] = { "HOME=/home/filip/Documents/Zavrsni/bash_variant", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
+	char * envp[] = { "HOME=/home/filip/Documents/Zavrsni", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
 	scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &machine_register_cleanup, NULL);
 	if(scriptInfo == NULL){
@@ -77,11 +77,11 @@ static int process_register(void *arg){
 	for (i = 0; i<SIZEOF(processIds); i++) {
 
 		sprintf(processIdString, "%d", processIds[i]);
-		printk(KERN_INFO "arg: %s\n", processIdString);
+		printk(KERN_INFO "Process ID: %s\n", processIdString);
 
-		char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/bash_variant/send_request.sh", MAIN_IP, "processRegister", processIdString, NULL };
+		char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "processRegister", processIdString, NULL };
 
-		char * envp[] = { "HOME=/home/filip/Documents/Zavrsni/bash_variant", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
+		char * envp[] = { "HOME=/home/filip/Documents/Zavrsni", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
 		scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &process_register_cleanup, NULL);
 		if(scriptInfo == NULL){
@@ -118,13 +118,13 @@ static int process_update(void *arg){
 		for (i = 0; i<SIZEOF(processIds); i++) {
 
 			sprintf(processIdString, "%d", processIds[i]);
-			printk(KERN_INFO "arg: %s\n", processIdString);
+			printk(KERN_INFO "Process ID: %s\n", processIdString);
 
-			char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/bash_variant/send_request.sh", MAIN_IP, "processUpdate", processIdString, NULL };
+			char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "processUpdate", processIdString, NULL };
 
-			char * envp[] = { "HOME=/home/filip/Documents/Zavrsni/bash_variant", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
+			char * envp[] = { "HOME=/home/filip/Documents/Zavrsni", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
-			scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &process_register_cleanup, NULL);
+			scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &process_update_cleanup, NULL);
 			if(scriptInfo == NULL){
 				printk(KERN_ERR "Error while creating script (%s)\n", functionName);
 				return -ENOMEM;
@@ -149,6 +149,31 @@ static int process_update(void *arg){
 }
 
 static int remove_machine(void *arg){
+	char functionName[20] = "machine_delete";
+
+	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
+
+	struct subprocess_info *scriptInfo;
+
+	char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "machineDelete", NULL };
+
+	char * envp[] = { "HOME=/home/filip/Documents/Zavrsni", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
+
+	scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &machine_register_cleanup, NULL);
+	if(scriptInfo == NULL){
+		printk(KERN_ERR "Error while creating script (%s)\n", functionName);
+		return -ENOMEM;
+	}
+
+	printk(KERN_INFO "%s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);
+	int callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_PROC);
+
+	if(callStatus != 0){
+		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
+		return callStatus;
+	}
+
+	printk(KERN_INFO "Machine delete called. Status: %d (%s).\n", callStatus, functionName);
 
 	return 0;
 }
