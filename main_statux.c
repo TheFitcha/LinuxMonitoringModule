@@ -6,11 +6,6 @@
 #include<linux/kmod.h>
 #include<linux/delay.h>
 
-#include<linux/fs.h>
-#include<asm/segment.h>
-#include<asm/uaccess.h>
-#include<linux/buffer_head.h>
-
 #define AUTHOR "Filip Balder"
 #define DESCRIPTION "Statux main module."
 #define LICENSE "GPL"
@@ -18,7 +13,6 @@
 #define SIZEOF(arr) sizeof(arr)/sizeof(*arr)
 
 #define MAIN_IP "192.168.1.52:5000"
-#define MAIN_ID_PATH "/db_ids"
 
 struct task_struct *machine_register_task;
 struct task_struct *process_register_task;
@@ -66,15 +60,11 @@ static int machine_register(void *arg){
 
 	printk(KERN_INFO "Machine register called. Status: %d (%s).\n", callStatus, functionName);
 
-//	wake_up_process(process_register_task);
 	return 0;
 }
 
 
 static int process_register(void *arg){
-//	set_current_state(TASK_INTERRUPTIBLE);
-//	schedule();
-
 	char functionName[20] = "process_register";
 	int * processIds = arg;
 	struct subprocess_info *scriptInfo;
@@ -167,22 +157,6 @@ static int remove_machine(void *arg){
 int init_routine(void){
 	printk("Initializing statux...\n");
 	int err;
-
-	/*machine_register_task = kthread_run(machine_register, NULL, "machine_register_thread");
-	if(IS_ERR(machine_register_task)){
-		printk(KERN_ERR "ERROR: Cannot create machine_register_thread!\n");
-		err = PTR_ERR(machine_register_task);
-		machine_register_task = NULL;
-		return err;
-	}
-
-	process_register_task = kthread_run(process_register, processIds, "process_register_thread");
-	if(IS_ERR(process_register_task)){
-		printk(KERN_ERR "ERROR: Cannot create process_register_thread!\n");
-		err = PTR_ERR(process_register_task);
-		process_register_task = NULL;
-		return err;
-	}*/
 
 	machine_register(NULL);
 
