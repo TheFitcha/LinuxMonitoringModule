@@ -15,6 +15,7 @@
 
 #define MAIN_IP "192.168.137.161:5000"
 #define SIZE_PARAMS 10
+#define SEND_FREQ 5000
 
 struct task_struct *process_update_task;
 
@@ -142,7 +143,7 @@ static int process_update(void *arg){
 			}
 
 			printk(KERN_INFO "Process update called. Status: %d (%s).\n", callStatus, functionName);
-			mdelay(5000);
+			mdelay(SEND_FREQ);
 		}
 	}
 
