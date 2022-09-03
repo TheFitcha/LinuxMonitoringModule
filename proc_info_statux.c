@@ -17,6 +17,8 @@ char buf[BUFSIZE];
 static ssize_t p_write_info(struct file *file, const char *ubuf, size_t count, loff_t *ppos){
 	int buf_len;
 	char *temp_buf;
+	char erase_keyword[] = "clear_proc_contents";
+	char erase_keyword_n[] = "clear_proc_contents\n";
 
 	if(*ppos > 0 || count > BUFSIZE){
 		printk(KERN_WARNING "ppos or count problem\n");
@@ -30,10 +32,20 @@ static ssize_t p_write_info(struct file *file, const char *ubuf, size_t count, l
 		return -EFAULT;
 	}
 
-	strcat(buf, temp_buf);
-
-	buf_len = strlen(buf);
-	*ppos = buf_len;
+	printk("%s\n", temp_buf);
+	printk("strcmp result: %d\n", strcmp(temp_buf, erase_keyword));
+	printk("len temp_buf: %d, len erase_keyword: %d\n", strlen(temp_buf), strlen(erase_keyword));
+	if(strcmp(temp_buf, erase_keyword) == 0 || strcmp(temp_buf, erase_keyword_n) == 0){
+		printk(KERN_INFO "Clearing statux_info contents!\n");
+		strcpy(buf, "");
+		buf_len = count;
+		*ppos = 0;
+	}
+	else{
+		strcat(buf, temp_buf);
+		buf_len = strlen(buf);
+		*ppos = buf_len;
+	}
 
 	printk("WRITE HANDLER STATUX INFO! Count: %d\n", buf_len);
 	return buf_len;

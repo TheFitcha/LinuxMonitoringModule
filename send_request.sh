@@ -79,8 +79,11 @@ case $command in
 
 			totalPhysicalMemoryKb=$(cat /proc/meminfo | grep MemTotal | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
 			totalSwapKb=$(cat /proc/meminfo | grep SwapTotal | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
+			freePhysicalMemoryKb=$(cat /proc/meminfo | grep MemFree | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
+			freeSwapMemoryKb=$(cat /proc/meminfo | grep SwapFree | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
+
 			registeredMemoryMachineId=$(curl -X POST -H "Content-type: application/json" \
-				-d "{\"machineId\":\"$newMachineId\", \"totalPhysicalMemoryKb\":\"$totalPhysicalMemoryKb\", \"totalSwapMemoryKb\":\"$totalSwapKb\"}" \
+				-d "{\"machineId\":\"$newMachineId\", \"totalPhysicalMemoryKb\":\"$totalPhysicalMemoryKb\", \"totalSwapMemoryKb\":\"$totalSwapKb\", \"freePhysicalMemoryKb\":\"$freePhysicalMemoryKb\", \"freeSwapMemoryKb\":\"$freeSwapMemoryKb\"}" \
 				--insecure https://$ip_address/api/main/memoryRegister)
 
 			echo 'New memory registered with machine: '$registeredMemoryMachineId$'\n'
@@ -168,6 +171,8 @@ case $command in
 		echo '[machineDelete] Deleting machine with id:'$machineId >> "$output_file_log"
 
 		returnId=$(curl -X DELETE --insecure https://$ip_address/api/main/machineDelete/$machineId -H "Accept: application/json")
+
+		printf 'clear_proc_contents' >> "$output_file_ids"
 
 		echo '[machineDelete] Deleted machine with id: '$machineId >> "$output_file_log"
 		echo "$ip_address/api/main/machineDelete/$machineId"

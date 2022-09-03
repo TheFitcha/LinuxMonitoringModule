@@ -24,6 +24,14 @@ static int processIdsCount;
 module_param_array(pids, int, &processIdsCount, 0660);
 MODULE_PARM_DESC(pids, "User filled array with process ID (int) targeted for monitoring.");
 
+static int freq = 0;
+module_param(freq, int, 0660);
+MODULE_PARM_DESC(freq, "Custom sending frequency in ms (default: 5000)");
+
+static int keep = 0;
+module_param(keep, int, 0660);
+MODULE_PARM_DESC(keep, "Set this parameter to 1 to keep data in database after unloading module.");
+
 static void machine_register_cleanup(struct subprocess_info *info){
 	printk(KERN_INFO "machine_register_cleanup\n");
 }
@@ -38,10 +46,10 @@ static void process_update_cleanup(struct subprocess_info *info){
 
 static int machine_register(void *arg){
 	char functionName[20] = "machine_register";
+	struct subprocess_info *scriptInfo;
+	int callStatus;
 
 	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
-
-	struct subprocess_info *scriptInfo;
 
 	char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "machineRegister", NULL };
 
@@ -54,7 +62,7 @@ static int machine_register(void *arg){
 	}
 
 	printk(KERN_INFO "%s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);
-	int callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_PROC);
+	callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_PROC);
 
 	if(callStatus != 0){
 		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
@@ -72,11 +80,10 @@ static int process_register(void *arg){
 	int * processIds = arg;
 	struct subprocess_info *scriptInfo;
 	char processIdString[10];
-	int callStatus;
+	int callStatus, i;
 
 	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
 
-	int i;
 	for (i = 0; i<SIZEOF(processIds); i++) {
 
 		sprintf(processIdString, "%d", processIds[i]);
@@ -112,11 +119,12 @@ static int process_update(void *arg){
 	int * processIds = arg;
 	struct subprocess_info *scriptInfo;
 	char processIdString[10];
-	int callStatus;
+	int callStatus, i;
+
+	int sending_frequency = (freq > 0) ? freq : SEND_FREQ;
 
 	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
 
-	int i;
 	while (!kthread_should_stop()){
 		for (i = 0; i<SIZEOF(processIds); i++) {
 
@@ -143,7 +151,7 @@ static int process_update(void *arg){
 			}
 
 			printk(KERN_INFO "Process update called. Status: %d (%s).\n", callStatus, functionName);
-			mdelay(SEND_FREQ);
+			mdelay(sending_frequency);
 		}
 	}
 
@@ -153,10 +161,9 @@ static int process_update(void *arg){
 static int remove_machine(void *arg){
 	char functionName[20] = "machine_delete";
 	int callStatus;
+	struct subprocess_info *scriptInfo;
 
 	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
-
-	struct subprocess_info *scriptInfo;
 
 	char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "machineDelete", NULL };
 
@@ -183,8 +190,9 @@ static int remove_machine(void *arg){
 
 
 int init_routine(void){
-	printk("Initializing statux...\n");
 	int err;
+
+	printk("Initializing statux...\n");
 
 	if(processIdsCount > SIZE_PARAMS){
 		printk(KERN_WARNING "Too many arguments passed into statux_main. Currently max: %d\n", SIZE_PARAMS);
@@ -209,7 +217,8 @@ int init_routine(void){
 
 void exit_routine(void){
 	kthread_stop(process_update_task);
-	remove_machine(NULL);
+	if(keep != 1)
+		remove_machine(NULL);
 	printk("Main statux module unloaded!\n");
 }
 
