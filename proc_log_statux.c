@@ -44,6 +44,8 @@ static ssize_t p_write_log(struct file *file, const char *ubuf, size_t count, lo
 		*ppos = buf_len;
 
 	}
+
+	kfree(temp_buf);
 	printk("WRITE HANDLER STATUX LOG! Count: %d\n", buf_len);
 
 	return buf_len;

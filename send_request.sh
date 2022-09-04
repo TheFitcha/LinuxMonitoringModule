@@ -186,6 +186,7 @@ case $command in
 		machineId=$(cat ${output_file_ids} | grep MachineId | cut -d ' ' -f2)
 		if [ -z "$machineId" ]
 		then
+			echo "clear_proc_contents" >> "$output_file_ids"
 			echo "[machineDelete] MachineId not found!" >> "$output_file_log"
 			echo "MachineId not found!"
 			exit

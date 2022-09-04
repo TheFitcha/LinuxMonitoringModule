@@ -111,7 +111,7 @@ static int process_register(void *arg){
 
 		printk(KERN_INFO "%s %s %s %s %s\n", argv[0], argv[1], argv[2], argv[3], argv[4]);
 
-		callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_EXEC);
+		callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_PROC);
 
 		if(callStatus != 0){
 			printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
@@ -161,7 +161,7 @@ static int process_update(void *arg){
 			}
 
 			printk(KERN_INFO "Process update called. Status: %d (%s).\n", callStatus, functionName);
-			mdelay(sending_frequency);
+			msleep_interruptible(sending_frequency);
 		}
 	}
 
@@ -190,7 +190,7 @@ static int memory_update(void *arg){
 		}
 
 		printk(KERN_INFO "%s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);
-		callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_PROC);
+		callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_EXEC);
 
 		if(callStatus != 0){
 			printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
@@ -198,7 +198,7 @@ static int memory_update(void *arg){
 		}
 
 		printk(KERN_INFO "Memory update called. Status: %d (%s).\n", callStatus, functionName);
-		mdelay(sending_frequency);
+		msleep_interruptible(sending_frequency);
 	}
 	return 0;
 }
@@ -248,6 +248,7 @@ int init_routine(void){
 
 	if(machine_register_status != 0){
 		printk(KERN_ERR "Failed to register machine to server! Status: %d\n", machine_register_status >> 8);
+		remove_machine(NULL);
 		return machine_register_status;
 	};
 
