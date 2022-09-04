@@ -63,7 +63,7 @@ case $command in
 				cacheKb=$(echo "$cpuCores" | sed -n $((3+$add))p | cut -d ':' -f2 | xargs | cut -d ' ' -f1)
 				printf "Cache KB: %s\n" $cacheKb
 
-				coreId=$(curl -X POST -H "Content-type: application/json" \
+				coreId=$(curl -s -X POST -H "Content-type: application/json" \
 					-d "{\"processorId\":\"$newCpuId\", \"speed\":\"$cpuMhz\", \"coreNo\":\"$coreNo\", \"cacheSizeKB\":\"$cacheKb\"}" \
 					--insecure https://$ip_address/api/main/coreRegister)
 
@@ -82,7 +82,7 @@ case $command in
 			freePhysicalMemoryKb=$(cat /proc/meminfo | grep MemFree | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
 			freeSwapMemoryKb=$(cat /proc/meminfo | grep SwapFree | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
 
-			registeredMemoryMachineId=$(curl -X POST -H "Content-type: application/json" \
+			registeredMemoryMachineId=$(curl -s -X POST -H "Content-type: application/json" \
 				-d "{\"machineId\":\"$newMachineId\", \"totalPhysicalMemoryKb\":\"$totalPhysicalMemoryKb\", \"totalSwapMemoryKb\":\"$totalSwapKb\", \"freePhysicalMemoryKb\":\"$freePhysicalMemoryKb\", \"freeSwapMemoryKb\":\"$freeSwapMemoryKb\"}" \
 				--insecure https://$ip_address/api/main/memoryRegister)
 
@@ -92,6 +92,30 @@ case $command in
 		fi
 
 		echo "$ip_address/api/main/$command"
+		;;
+
+	"memoryUpdate")
+		machineId=$(cat ${output_file_ids} | grep MachineId | cut -d ' ' -f2)
+		if [ -z "$machineId" ]
+		then
+			echo "MachineID not found!" >> "$output_file_log"
+			echo "MachineID not found!"
+			exit
+		fi
+
+		echo '[memoryUpdate] Updating memory for machineId: '$machineId >> "$output_file_log"
+
+		totalPhysicalMemoryKb=$(cat /proc/meminfo | grep MemTotal | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
+		totalSwapKb=$(cat /proc/meminfo | grep SwapTotal | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
+		freePhysicalMemoryKb=$(cat /proc/meminfo | grep MemFree | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
+		freeSwapMemoryKb=$(cat /proc/meminfo | grep SwapFree | cut -d ':' -f2 | xargs | cut -d ' ' -f1 | xargs)
+
+		updatedMemoryMachineId=$(curl -s -X PUT -H "Content-type: application/json" \
+			-d "{\"machineId\":\"$machineId\", \"totalPhysicalMemoryKb\":\"$totalPhysicalMemoryKb\", \"totalSwapMemoryKb\":\"$totalSwapKb\", \"freePhysicalMemoryKb\":\"$freePhysicalMemoryKb\", \"freeSwapMemoryKb\":\"$freeSwapMemoryKb\"}" \
+			--insecure https://$ip_address/api/main/memoryUpdate)
+
+		echo 'New memory updated for machine: '$updatedMemoryMachineId$'\n'
+		printf "Memory updated\n" >> "$output_file_ids"
 		;;
 
 	"processRegister")
