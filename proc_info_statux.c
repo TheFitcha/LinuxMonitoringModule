@@ -20,8 +20,8 @@ static ssize_t p_write_info(struct file *file, const char *ubuf, size_t count, l
 	char erase_keyword[] = "clear_proc_contents";
 	char erase_keyword_n[] = "clear_proc_contents\n";
 
-	if(*ppos > 0 || count > BUFSIZE){
-		printk(KERN_WARNING "ppos or count problem\n");
+	if(count > BUFSIZE){
+		printk(KERN_WARNING "buffer overload\n");
 		return -EFAULT;
 	}
 
@@ -32,9 +32,6 @@ static ssize_t p_write_info(struct file *file, const char *ubuf, size_t count, l
 		return -EFAULT;
 	}
 
-	printk("%s\n", temp_buf);
-	printk("strcmp result: %d\n", strcmp(temp_buf, erase_keyword));
-	printk("len temp_buf: %d, len erase_keyword: %d\n", strlen(temp_buf), strlen(erase_keyword));
 	if(strcmp(temp_buf, erase_keyword) == 0 || strcmp(temp_buf, erase_keyword_n) == 0){
 		printk(KERN_INFO "Clearing statux_info contents!\n");
 		strcpy(buf, "");

@@ -115,7 +115,6 @@ case $command in
 			--insecure https://$ip_address/api/main/memoryUpdate)
 
 		echo 'New memory updated for machine: '$updatedMemoryMachineId$'\n'
-		printf "Memory updated\n" >> "$output_file_ids"
 		;;
 
 	"processRegister")

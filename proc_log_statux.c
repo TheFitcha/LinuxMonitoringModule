@@ -20,8 +20,8 @@ static ssize_t p_write_log(struct file *file, const char *ubuf, size_t count, lo
 	char erase_keyword[] = "clear_proc_contents";
 	char erase_keyword_n[] = "clear_proc_contents\n";
 
-	if(*ppos > 0 || count > BUFSIZE){
-		printk(KERN_WARNING "ppos or count problem\n");
+	if(count > BUFSIZE){
+		printk(KERN_WARNING "buffer overload\n");
 		return -EFAULT;
 	}
 

@@ -72,11 +72,11 @@ static int machine_register(void *arg){
 	}
 
 	printk(KERN_INFO "%s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);
-	callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_PROC);
+	callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_EXEC);
 
 	if(callStatus != 0){
-		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-		return callStatus;
+		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", -EFAULT, functionName);
+		return -EFAULT;
 	}
 
 	printk(KERN_INFO "Machine register called. Status: %d (%s).\n", callStatus, functionName);
@@ -115,7 +115,7 @@ static int process_register(void *arg){
 
 		if(callStatus != 0){
 			printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-			return callStatus;
+			return -EFAULT;
 		}
 	}
 
@@ -157,7 +157,7 @@ static int process_update(void *arg){
 
 			if(callStatus != 0){
 				printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-				return callStatus;
+				return -EFAULT;
 			}
 
 			printk(KERN_INFO "Process update called. Status: %d (%s).\n", callStatus, functionName);
@@ -194,7 +194,7 @@ static int memory_update(void *arg){
 
 		if(callStatus != 0){
 			printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-			return callStatus;
+			return -EFAULT;
 		}
 
 		printk(KERN_INFO "Memory update called. Status: %d (%s).\n", callStatus, functionName);
@@ -221,11 +221,11 @@ static int remove_machine(void *arg){
 	}
 
 	printk(KERN_INFO "%s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);
-	callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_PROC);
+	callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_EXEC);
 
 	if(callStatus != 0){
 		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-		return callStatus;
+		return -EFAULT;
 	}
 
 	printk(KERN_INFO "Machine delete called. Status: %d (%s).\n", callStatus, functionName);
@@ -244,7 +244,14 @@ int init_routine(void){
 		return -EINVAL;
 	}
 
-	machine_register(NULL);
+	int machine_register_status = machine_register(NULL);
+
+	if(machine_register_status != 0){
+		printk(KERN_ERR "Failed to register machine to server! Status: %d\n", machine_register_status >> 8);
+		return machine_register_status;
+	};
+
+	//msleep(1000);
 
 	if(processIdsCount != 0){
 		process_register(pids);

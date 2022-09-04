@@ -1,0 +1,4 @@
+pids -> arrays of pids to monitor
+freq -> frequence of sending data to server (in ms, default: 5000)
+freq_mem -> frequence of updating memory data to server (in ms, default: 5000)
+keep -> set to 1 to keep data in server after unloading module
