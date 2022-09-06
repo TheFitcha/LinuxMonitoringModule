@@ -85,8 +85,8 @@ static int machine_register(void *arg){
 	callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_EXEC);
 
 	if(callStatus != 0){
-		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", -EFAULT, functionName);
-		return -EFAULT;
+		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", -callStatus, functionName);
+		return -callStatus;
 	}
 
 	printk(KERN_INFO "Machine register called. Status: %d (%s).\n", callStatus, functionName);
@@ -105,6 +105,7 @@ static int process_register(void *arg){
 	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
 
 	for (i = 0; i<SIZEOF(processIds); i++) {
+		if(processIds[i] == 0) continue;
 
 		sprintf(processIdString, "%d", processIds[i]);
 		printk(KERN_INFO "Process ID: %s\n", processIdString);
@@ -125,7 +126,7 @@ static int process_register(void *arg){
 
 		if(callStatus != 0){
 			printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-			return -EFAULT;
+			return -callStatus;
 		}
 	}
 
@@ -147,6 +148,7 @@ static int process_update(void *arg){
 
 	while (!kthread_should_stop()){
 		for (i = 0; i<SIZEOF(processIds); i++) {
+			if(processIds[i] == 0) continue;
 
 			sprintf(processIdString, "%d", processIds[i]);
 			printk(KERN_INFO "Process ID: %s\n", processIdString);
@@ -167,7 +169,7 @@ static int process_update(void *arg){
 
 			if(callStatus != 0){
 				printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-				return -EFAULT;
+				return -callStatus;
 			}
 
 			printk(KERN_INFO "Process update called. Status: %d (%s).\n", callStatus, functionName);
@@ -204,7 +206,7 @@ static int memory_update(void *arg){
 
 		if(callStatus != 0){
 			printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-			return -EFAULT;
+			return -callStatus;
 		}
 
 		printk(KERN_INFO "Memory update called. Status: %d (%s).\n", callStatus, functionName);
@@ -235,7 +237,7 @@ static int remove_machine(void *arg){
 
 	if(callStatus != 0){
 		printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
-		return -EFAULT;
+		return -callStatus;
 	}
 
 	printk(KERN_INFO "Machine delete called. Status: %d (%s).\n", callStatus, functionName);
@@ -286,6 +288,7 @@ int init_routine(void){
 		return machine_register_status;
 	};
 
+	msleep(500);
 
 	if(processIdsCount != 0){
 		process_register(pids);
