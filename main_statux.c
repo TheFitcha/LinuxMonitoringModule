@@ -7,6 +7,13 @@
 #include<linux/delay.h>
 #include<linux/moduleparam.h>
 
+#include<linux/rcupdate.h>
+#include<linux/fdtable.h>
+#include<linux/fs.h>
+#include<linux/fs_struct.h>
+#include<linux/dcache.h>
+#include<linux/slab.h>
+
 #define AUTHOR "Filip Balder"
 #define DESCRIPTION "Statux main module."
 #define LICENSE "GPL"
@@ -17,9 +24,12 @@
 #define SIZE_PARAMS 10
 #define SEND_FREQ 5000
 #define SEND_FREQ_MEM 10000
+#define SCRIPT_NAME "send_request.sh"
 
 struct task_struct *process_update_task;
 struct task_struct *memory_update_task;
+
+char *cwd, *abs_script_path;
 
 static int pids[100];
 static int processIdsCount;
@@ -61,7 +71,7 @@ static int machine_register(void *arg){
 
 	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
 
-	char * argv[] = { "/usr/bin/bash", "./send_request.sh", MAIN_IP, "machineRegister", NULL };
+	char * argv[] = { "/usr/bin/bash", abs_script_path, MAIN_IP, "machineRegister", NULL };
 
 	char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
@@ -99,7 +109,7 @@ static int process_register(void *arg){
 		sprintf(processIdString, "%d", processIds[i]);
 		printk(KERN_INFO "Process ID: %s\n", processIdString);
 
-		char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "processRegister", processIdString, NULL };
+		char * argv[] = { "/usr/bin/bash", abs_script_path, MAIN_IP, "processRegister", processIdString, NULL };
 
 		char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
@@ -141,7 +151,7 @@ static int process_update(void *arg){
 			sprintf(processIdString, "%d", processIds[i]);
 			printk(KERN_INFO "Process ID: %s\n", processIdString);
 
-			char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "processUpdate", processIdString, NULL };
+			char * argv[] = { "/usr/bin/bash", abs_script_path, MAIN_IP, "processUpdate", processIdString, NULL };
 
 			char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
@@ -179,7 +189,7 @@ static int memory_update(void *arg){
 
 	while(!kthread_should_stop()){
 
-		char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "memoryUpdate", NULL };
+		char * argv[] = { "/usr/bin/bash", abs_script_path, MAIN_IP, "memoryUpdate", NULL };
 
 		char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
@@ -210,7 +220,7 @@ static int remove_machine(void *arg){
 
 	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
 
-	char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "machineDelete", NULL };
+	char * argv[] = { "/usr/bin/bash", abs_script_path, MAIN_IP, "machineDelete", NULL };
 
 	char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
@@ -233,9 +243,33 @@ static int remove_machine(void *arg){
 	return 0;
 }
 
+static void get_curr_path(void){
+	struct path current_path;
+	char *buffer;
+	int len_read = sizeof(char)*100;
+
+	current_path = current->fs->pwd;
+	path_get(&current_path);
+	buffer = (char*) kmalloc (GFP_KERNEL, len_read);
+	cwd = d_path(&current_path, buffer, len_read);
+}
+
+static void set_abs_script_path(void){
+	strcat(cwd, "/");
+	abs_script_path = (char*) kmalloc (GFP_KERNEL, sizeof(cwd)+sizeof(SCRIPT_NAME));
+	strcpy(abs_script_path, cwd);
+	strcat(abs_script_path, SCRIPT_NAME);
+}
+
 
 int init_routine(void){
 	int err;
+
+	get_curr_path();
+	printk(KERN_ALERT "working dir: %s\n", cwd);
+
+	set_abs_script_path();
+	printk(KERN_ALERT "abs script path: %s\n", abs_script_path);
 
 	printk("Initializing statux...\n");
 
