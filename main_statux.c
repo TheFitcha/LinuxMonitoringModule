@@ -61,11 +61,11 @@ static int machine_register(void *arg){
 
 	printk(KERN_INFO "%s thread id: %d\n", functionName, current->pid);
 
-	char * argv[] = { "/usr/bin/bash", "/home/filip/Documents/Zavrsni/send_request.sh", MAIN_IP, "machineRegister", NULL };
+	char * argv[] = { "/usr/bin/bash", "./send_request.sh", MAIN_IP, "machineRegister", NULL };
 
 	char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
-	scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &machine_register_cleanup, NULL);
+	scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_KERNEL, NULL, &machine_register_cleanup, NULL);
 	if(scriptInfo == NULL){
 		printk(KERN_ERR "Error while creating script (%s)\n", functionName);
 		return -ENOMEM;
@@ -103,7 +103,7 @@ static int process_register(void *arg){
 
 		char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
-		scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &process_register_cleanup, NULL);
+		scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_KERNEL, NULL, &process_register_cleanup, NULL);
 		if(scriptInfo == NULL){
 			printk(KERN_ERR "Error while creating script (%s)\n", functionName);
 			return -ENOMEM;
@@ -111,7 +111,7 @@ static int process_register(void *arg){
 
 		printk(KERN_INFO "%s %s %s %s %s\n", argv[0], argv[1], argv[2], argv[3], argv[4]);
 
-		callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_PROC);
+		callStatus = call_usermodehelper_exec(scriptInfo, UMH_WAIT_EXEC);
 
 		if(callStatus != 0){
 			printk(KERN_ERR "Error while calling script (code: %d) (%s)\n", callStatus >> 8, functionName);
@@ -145,7 +145,7 @@ static int process_update(void *arg){
 
 			char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
-			scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &process_update_cleanup, NULL);
+			scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_KERNEL, NULL, &process_update_cleanup, NULL);
 			if(scriptInfo == NULL){
 				printk(KERN_ERR "Error while creating script (%s)\n", functionName);
 				return -ENOMEM;
@@ -183,7 +183,7 @@ static int memory_update(void *arg){
 
 		char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
-		scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &memory_update_cleanup, NULL);
+		scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_KERNEL, NULL, &memory_update_cleanup, NULL);
 		if(scriptInfo == NULL){
 			printk(KERN_ERR "Error while creating script (%s)\n", functionName);
 			return -ENOMEM;
@@ -214,7 +214,7 @@ static int remove_machine(void *arg){
 
 	char * envp[] = { "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
 
-	scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC, NULL, &machine_register_cleanup, NULL);
+	scriptInfo = call_usermodehelper_setup(argv[0], argv, envp, GFP_KERNEL, NULL, &machine_register_cleanup, NULL);
 	if(scriptInfo == NULL){
 		printk(KERN_ERR "Error while creating script (%s)\n", functionName);
 		return -ENOMEM;
@@ -252,7 +252,6 @@ int init_routine(void){
 		return machine_register_status;
 	};
 
-	//msleep(1000);
 
 	if(processIdsCount != 0){
 		process_register(pids);

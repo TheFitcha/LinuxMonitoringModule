@@ -10,7 +10,6 @@ case $command in
 	"machineRegister")
 		linuxVersion=$(cat /proc/version | cut -d ' ' -f3)
 
-		#registracija mašine
 		name=$(hostname)
 		if [ -z "$(cat ${output_file_ids} | grep MachineId)" ]
 		then
@@ -28,7 +27,7 @@ case $command in
 
 		echo 'Machine id: '$newMachineId$'\n'
 
-		#registracija procesora
+
 		cpuName=$(cat /proc/cpuinfo | grep 'model name' -m1 | cut -d ':' -f2 | xargs)
 		if [ -z "$(cat ${output_file_ids} | grep CpuId)" ]
 		then
@@ -46,7 +45,8 @@ case $command in
 
 		echo 'CPU id: '$newCpuId$'\n'
 
-		#registracija jezgri
+
+
 		if [ -z "$(cat ${output_file_ids} | grep 'Cores registered')" ]
 		then
 			echo "[machineRegister] Creating cores!" >> "$output_file_log"
@@ -72,7 +72,8 @@ case $command in
 			printf "Cores registered\n" >> "$output_file_ids"
 		fi
 
-		#registracija memorije
+
+
 		if [ -z "$(cat ${output_file_ids} | grep 'Memory registered')" ]
 		then
 			echo "[machineRegister] Creating memory!" >> "$output_file_log"
